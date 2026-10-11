@@ -271,4 +271,4 @@ grant execute on function public.join_group(text), public.request_booking(bigint
 -- Wer sich als Erster mit einer gültigen Einladung anmeldet, wird Admin.
 -- =====================================================================
 insert into public.invites (email, name, invited_by)
-values ('maschinenring41@gmail.com', 'Raphael', null);
+values ('raphy.k@freenet.de', 'Raphael', null);
