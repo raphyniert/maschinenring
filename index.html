@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maschinenring</title>
+<meta name="theme-color" content="#22535C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Maschinenring">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px)}
+[hidden]{display:none!important}
+
+/* Maschinenring – phone-first app shell — sticky header, inventory-tag cards, bottom tab bar, slide-up detail sheet */
+:root{
+  --bg:#ECEFEA; --surface:#FFFFFF; --sunk:#E1E6DF; --ink:#1D2A2E; --muted:#596667; --line:#CBD2CA;
+  --tag:#F2B630; --tag-ink:#2A2108; --tone:#22535C; --tone-ink:#FFFFFF;
+  --ok:#2C7549; --ok-bg:#DCEEE2; --warn:#8F5B0E; --warn-bg:#F6EAD0; --bad:#AD3427; --bad-bg:#F6DDD9;
+  --scrim:rgba(20,30,32,.45);
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#131A1C; --surface:#1C2528; --sunk:#172023; --ink:#E6ECE9; --muted:#9BA8A7; --line:#2F3B3E;
+  --tag:#F2B630; --tag-ink:#2A2108; --tone:#7DBCC6; --tone-ink:#0F2226;
+  --ok:#69C38E; --ok-bg:#1C3427; --warn:#E3AE55; --warn-bg:#382B14; --bad:#EE7B6D; --bad-bg:#3D211D;
+  --scrim:rgba(0,0,0,.6); color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#131A1C; --surface:#1C2528; --sunk:#172023; --ink:#E6ECE9; --muted:#9BA8A7; --line:#2F3B3E;
+  --tag:#F2B630; --tag-ink:#2A2108; --tone:#7DBCC6; --tone-ink:#0F2226;
+  --ok:#69C38E; --ok-bg:#1C3427; --warn:#E3AE55; --warn-bg:#382B14; --bad:#EE7B6D; --bad-bg:#3D211D;
+  --scrim:rgba(0,0,0,.6); color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--tone);outline-offset:2px}
+.app{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:0 96px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:14px 10px;border-bottom:1px solid var(--line)}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase}
+.brand p{margin:2px 0 0;color:var(--muted);font-size:13px}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.who select{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--ink)}
+
+h2{font-family:var(--f-display);font-weight:600;font-size:22px;letter-spacing:.02em;text-transform:uppercase;margin:22px 0 10px;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:18px;letter-spacing:.02em;text-transform:uppercase;margin:20px 0 8px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.num{font-variant-numeric:tabular-nums}
+
+.today{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:baseline;margin-top:16px}
+.today b{font-family:var(--f-display);font-size:20px;font-weight:600}
+.today span{font-size:14px;color:var(--muted)}
+.today span strong{color:var(--ink)}
+
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.toolbar input[type=search]{flex:1 1 220px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.check{display:inline-flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
+.check input{accent-color:var(--tone);width:18px;height:18px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-block:12px 4px;scrollbar-width:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:10px}
+.tool{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;min-width:0}
+.tool:hover{border-color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:6px;background:var(--tag);color:var(--tag-ink);font-family:var(--f-mono);font-size:12px;font-weight:500;padding:3px 8px 3px 6px;border-radius:3px 6px 6px 3px;letter-spacing:.02em}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--surface);box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.t-name{font-weight:600;font-size:17px;line-height:1.25}
+.t-meta{font-size:13px;color:var(--muted)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;letter-spacing:.02em}
+.pill.frei{background:var(--ok-bg);color:var(--ok)}
+.pill.verliehen{background:var(--warn-bg);color:var(--warn)}
+.pill.gesperrt{background:var(--bad-bg);color:var(--bad)}
+.pill.angefragt{background:var(--sunk);color:var(--ink);border:1px dashed var(--muted)}
+.pill.abgelehnt{background:var(--bad-bg);color:var(--bad)}
+.pill.bestaetigt{background:var(--ok-bg);color:var(--ok)}
+.status-sub{font-size:13px;color:var(--muted)}
+.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:10px;margin-top:10px}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--tone);color:var(--tone-ink);border-color:var(--tone)}
+.btn.danger{color:var(--bad)}
+.btn.small{padding:6px 10px;font-size:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.foot{margin-top:28px;font-size:13px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.linkish{background:none;border:0;padding:0;color:var(--tone);text-decoration:underline;cursor:pointer;font-size:13px}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.item.stripe-bad{border-left:4px solid var(--bad)}
+.item.stripe-warn{border-left:4px solid var(--warn)}
+.item .head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item .title{font-weight:600}
+.item .line{font-size:14px;color:var(--muted)}
+.item .line strong{color:var(--ink);font-weight:600}
+.panel{background:var(--sunk);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;margin-top:4px}
+
+form.f{display:flex;flex-direction:column;gap:10px}
+.f label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+.f input:not([type=checkbox]):not([type=radio]),.f select,.f textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px;color:var(--ink);min-width:0;width:100%}
+.f textarea{min-height:64px;resize:vertical}
+.f .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f .check{color:var(--ink);flex-direction:row;font-size:14px}
+.msg{font-size:14px;min-height:1px}
+.msg.err{color:var(--bad)}
+.msg.ok{color:var(--ok)}
+
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:8px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.c-best{background:var(--tone)}
+.c-req{background:repeating-linear-gradient(45deg,var(--tag) 0 3px,transparent 3px 6px);box-shadow:inset 0 0 0 1px var(--tag)}
+.c-blk{background:var(--bad-bg);box-shadow:inset 0 0 0 1px var(--bad)}
+
+.scroll-x{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table.plan{border-collapse:separate;border-spacing:0;font-size:13px;min-width:100%}
+.plan th,.plan td{padding:0;border-bottom:1px solid var(--line);text-align:center}
+.plan thead th{padding:6px 2px;font-weight:500;color:var(--muted);font-size:11px;line-height:1.2;min-width:34px}
+.plan thead th.we{color:var(--ink)}
+.plan thead th.now{color:var(--tone);font-weight:700}
+.plan .name{position:sticky;left:0;background:var(--surface);text-align:left;padding:8px 10px;min-width:150px;max-width:170px;border-right:1px solid var(--line);z-index:1}
+.plan .name button{background:none;border:0;padding:0;text-align:left;cursor:pointer;font-weight:600;font-size:13px;line-height:1.25}
+.plan .name small{display:block;color:var(--muted);font-family:var(--f-mono);font-size:11px}
+.plan td.d{height:40px;position:relative}
+.plan td.d.we{background:var(--sunk)}
+.plan td.d span{position:absolute;inset:8px 0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.plan td.d span.c-best{color:var(--tone-ink)}
+.plan td.d span.c-req{color:var(--tag-ink)}
+.plan td.d span.c-blk{color:var(--bad)}
+.plan td.d span.start{border-top-left-radius:5px;border-bottom-left-radius:5px;margin-left:3px}
+.plan td.d span.end{border-top-right-radius:5px;border-bottom-right-radius:5px;margin-right:3px}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabs .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
+.mail{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px}
+.mail .mh{background:var(--sunk);padding:10px 14px;font-size:13px;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid var(--line)}
+.mail .mh span{color:var(--muted)}
+.mail .mh strong{color:var(--ink);font-weight:600}
+.mail .mb{padding:14px;font-size:15px;display:flex;flex-direction:column;gap:10px;max-width:62ch}
+.mail .cta{align-self:flex-start;background:var(--tone);color:var(--tone-ink);border-radius:8px;padding:9px 14px;font-weight:600}
+.mail code{font-family:var(--f-mono);font-size:12px;word-break:break-all;color:var(--muted);user-select:all}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--tag);padding-left:10px}
+.rules{margin:0;padding-left:20px;font-size:14px;display:flex;flex-direction:column;gap:4px;color:var(--ink)}
+.tabs button{background:none;border:0;padding:10px 4px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:12px;font-weight:600;position:relative}
+.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-current=page]{color:var(--tone)}
+.tabs button[aria-current=page]::after{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;background:var(--tone);border-radius:0 0 3px 3px}
+.badge{position:absolute;top:5px;left:calc(50% + 6px);background:var(--bad);color:#fff;font-size:11px;border-radius:999px;min-width:18px;height:18px;line-height:18px;padding:0 5px}
+
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:10}
+.sheet{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(760px,100%);max-height:90%;overflow-y:auto;z-index:11;background:var(--bg);border-radius:16px 16px 0 0;padding:8px 16px calc(24px + env(safe-area-inset-bottom,0px));animation:up .22s ease-out}
+@keyframes up{from{transform:translate(-50%,24px);opacity:.6}to{transform:translate(-50%,0);opacity:1}}
+.sheet .grab{width:44px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 8px}
+.sheet .x{position:absolute;top:10px;right:12px}
+.sheet h2{margin-top:8px;padding-right:56px}
+dl.facts{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;margin:12px 0 0;font-size:15px}
+dl.facts dt{color:var(--muted)}
+dl.facts dd{margin:0;min-width:0}
+.hint{background:var(--warn-bg);color:var(--ink);border-radius:8px;padding:10px 12px;font-size:14px;margin-top:12px}
+.hint b{color:var(--warn)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal div{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 0;text-align:center;font-size:12px;line-height:1.2;min-width:0}
+.cal div small{display:block;color:var(--muted);font-size:10px}
+.cal div.c-best{background:var(--tone);color:var(--tone-ink);border-color:var(--tone)}
+.cal div.c-best small{color:inherit;opacity:.8}
+.cal div.c-req{border-color:var(--tag)}
+.cal div.c-blk{color:var(--bad)}
+.cal div.now{outline:2px solid var(--ink);outline-offset:-1px}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.toast.err{background:var(--bad);color:#fff}
+@media (prefers-reduced-motion: reduce){.sheet{animation:none}}
+@media (max-width:420px){.f .two{grid-template-columns:1fr}}
+
+.linkish.title{font-size:16px;text-decoration:none;color:var(--ink);font-weight:600;text-align:left}
+code.mono{font-family:var(--f-mono);font-size:12px;word-break:break-all;color:var(--muted);user-select:all}
+.who{gap:6px}
+.who #meName{font-weight:600;color:var(--ink)}
+button:disabled{opacity:.55;cursor:progress}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1 id="gname">Maschinenring</h1><p id="sub">Werkzeug teilen unter Freunden</p></div>
+    <div class="who" id="who" hidden><span id="meName"></span><button class="btn small" data-act="refresh" aria-label="Aktualisieren">↻</button><button class="btn small" data-act="logout">Abmelden</button></div>
+  </header>
+  <main id="view"><div class="empty">Lädt …</div></main>
+</div>
+
+<nav class="tabs" id="tabs" aria-label="Bereiche" hidden><div class="in">
+  <button data-act="tab" data-id="geraete"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3 17.8V21h3.2l6.3-6.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>Geräte</button>
+  <button data-act="tab" data-id="belegung"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Belegung</button>
+  <button data-act="tab" data-id="anfragen"><svg viewBox="0 0 24 24"><path d="M4 7h11l-3-3M20 17H9l3 3"/></svg>Ausleihen<span class="badge" id="bA" hidden></span></button>
+  <button data-act="tab" data-id="wartung"><svg viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg>Wartung<span class="badge" id="bW" hidden></span></button>
+  <button data-act="tab" data-id="gruppe"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3 3 0 0 1 0 6M18 14.5c1.8.8 3 2.6 3 4.5"/></svg>Gruppe<span class="badge" id="bG" hidden></span></button>
+</div></nav>
+
+<div class="scrim" id="scrim" hidden data-act="close"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" hidden></section>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+'use strict';
+const CFG=window.MR_CONFIG||{};
+const CATS={bohren:'Bohren & Schrauben',saegen:'Sägen',garten:'Garten',reinigen:'Reinigen',messen:'Messen',bau:'Bau & Fliesen',sonstiges:'Sonstiges'};
+const ENERGIE=['18 V Akku','230 V','Benzin','Batterie','Druckluft','manuell'];
+const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+const INVITE_DAYS=7;
+const APP_URL=location.origin+location.pathname.replace(/index\.html$/,'');
+const RULES=['Gerät sauber, geladen und mit allem Zubehör zurückgeben.','Schäden sofort in der App melden, nicht erst bei der Rückgabe.','Wer etwas kaputt macht, klärt die Reparatur mit dem Besitzer.','Schutzausrüstung laut Hinweis am Gerät ist Pflicht.'];
+
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const parse=s=>{const [y,m,d]=s.slice(0,10).split('-').map(Number);return new Date(y,m-1,d)};
+let TODAY=iso(new Date());
+const off=n=>{const x=parse(TODAY);x.setDate(x.getDate()+n);return iso(x)};
+const fmt=s=>{const x=parse(s);return WD[x.getDay()]+' '+String(x.getDate()).padStart(2,'0')+'.'+String(x.getMonth()+1).padStart(2,'0')+'.'};
+const range=(a,b)=>a===b?fmt(a):fmt(a)+' – '+fmt(b);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const localDay=ts=>iso(new Date(ts));
+const code=id=>'MR-'+String(id).padStart(3,'0');
+
+/* ---------- Supabase ---------- */
+const configured=CFG.url&&CFG.anonKey&&!/DEIN/.test(CFG.url+CFG.anonKey)&&window.supabase;
+const sb=configured?window.supabase.createClient(CFG.url,CFG.anonKey,{auth:{flowType:'implicit',persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}):null;
+
+const S={me:null,members:[],invites:[],tools:[],bookings:[],issues:[]};
+const ui={tab:'geraete',q:'',cat:'',onlyFree:false,sheet:null,ret:null,preview:null,screen:'loading',authMsg:'',sentTo:''};
+try{const t=localStorage.getItem('mr-tab');if(t)ui.tab=t}catch(e){}
+
+const M=id=>S.members.find(m=>m.id===id)||{name:'Ehemaliges Mitglied',email:''};
+const TL=id=>S.tools.find(t=>t.id===id);
+const ini=id=>M(id).name.slice(0,2);
+const blocking=t=>S.issues.find(i=>i.tool===t.id&&!i.done&&i.blocking);
+const activeOn=(t,d)=>S.bookings.find(b=>b.tool===t.id&&b.status==='bestätigt'&&b.from<=d&&b.to>=d);
+const reqOn=(t,d)=>S.bookings.find(b=>b.tool===t.id&&b.status==='angefragt'&&b.from<=d&&b.to>=d);
+const validUntil=v=>localDay(new Date(v.created_at).getTime()+INVITE_DAYS*864e5);
+const expired=v=>v.status==='offen'&&new Date(v.created_at).getTime()+INVITE_DAYS*864e5<Date.now();
+function status(t){
+  if(blocking(t)) return {k:'gesperrt',label:'Gesperrt',sub:'Schaden gemeldet'};
+  const b=activeOn(t,TODAY); if(b) return {k:'verliehen',label:'Verliehen',sub:'bei '+M(b.by).name+' bis '+fmt(b.to)};
+  return {k:'frei',label:'Frei heute',sub:''};
+}
+const conflict=(toolId,from,to,ignoreId)=>S.bookings.find(b=>b.tool===toolId&&b.id!==ignoreId&&b.status==='bestätigt'&&from<=b.to&&b.from<=to);
+
+function toast(msg,err){const el=document.getElementById('toast');el.textContent=msg;el.className='toast'+(err?' err':'');el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,err?6000:3600)}
+const errText=e=>{const m=(e&&(e.message||e.error_description))||String(e);
+  if(/tools_owner_fkey/.test(m))return 'Das Mitglied hat noch Geräte eingetragen. Erst austragen oder übergeben.';
+  if(/invites_one_open_per_email/.test(m))return 'An diese Adresse läuft schon eine Einladung.';
+  if(/rate limit|security purposes/i.test(m))return 'Zu viele E-Mails in kurzer Zeit. Bitte in einer Minute nochmal versuchen.';
+  if(/Failed to fetch|NetworkError/i.test(m))return 'Keine Verbindung. Bist du online?';
+  return m};
+
+async function loadAll(){
+  TODAY=iso(new Date());
+  const q=(t,o)=>sb.from(t).select('*').order(o);
+  const [m,v,t,b,i]=await Promise.all([q('members','name'),q('invites','created_at'),q('tools','id'),q('bookings','date_from'),q('issues','created_at')]);
+  const err=[m,v,t,b,i].find(r=>r.error);if(err)throw err.error;
+  S.members=m.data.map(x=>({id:x.id,name:x.name,email:x.email,role:x.role,since:x.since}));
+  S.invites=v.data.map(x=>({id:x.id,email:x.email,name:x.name||'',by:x.invited_by,created_at:x.created_at,date:localDay(x.created_at),status:x.status}));
+  S.tools=t.data.map(x=>({id:x.id,code:code(x.id),name:x.name,cat:x.category,owner:x.owner,energie:x.power,zubehoer:x.accessories||[],hinweis:x.note||''}));
+  S.bookings=b.data.map(x=>({id:x.id,tool:x.tool_id,by:x.borrower,from:x.date_from,to:x.date_to,status:x.status,zweck:x.purpose||''}));
+  S.issues=i.data.map(x=>({id:x.id,tool:x.tool_id,typ:x.kind,text:x.text,by:x.reported_by,date:localDay(x.created_at),blocking:x.blocking,done:x.done}));
+}
+
+async function boot(){
+  if(!configured){ui.screen='setup';return render()}
+  const h=new URLSearchParams(location.hash.slice(1));
+  if(h.get('error_description')){ui.authMsg=h.get('error_description').replace(/\+/g,' ');if(/expired|invalid/i.test(ui.authMsg))ui.authMsg='Der Link ist abgelaufen oder wurde schon benutzt. Gib deine E-Mail ein, dann bekommst du einen neuen.';history.replaceState(null,'',location.pathname)}
+  const {data:{session}}=await sb.auth.getSession();
+  if(location.hash.includes('access_token'))history.replaceState(null,'',location.pathname);
+  if(!session){ui.screen='login';return render()}
+  await enter(session);
+}
+async function enter(session){
+  const {data,error}=await sb.from('members').select('*').eq('id',session.user.id).maybeSingle();
+  if(error){ui.screen='error';ui.authMsg=errText(error);return render()}
+  if(!data){ui.screen='join';ui.joinEmail=session.user.email;return render()}
+  S.me=data.id;
+  try{await loadAll();ui.screen='app'}catch(e){ui.screen='error';ui.authMsg=errText(e)}
+  render();
+}
+sb&&sb.auth.onAuthStateChange((ev,session)=>{
+  if(ev==='SIGNED_IN'&&ui.screen!=='app'&&ui.screen!=='join')enter(session);
+  if(ev==='SIGNED_OUT'){S.me=null;ui.screen='login';render()}
+});
+async function act(fn,okMsg,btn){
+  if(btn){if(btn.disabled)return;btn.disabled=true}
+  try{const r=await fn();if(r&&r.error)throw r.error;await loadAll();render();if(okMsg)toast(typeof okMsg==='function'?okMsg(r):okMsg);return true}
+  catch(e){toast(errText(e),true);return false}
+  finally{if(btn&&btn.isConnected)btn.disabled=false}
+}
+
+/* ---------- Ohne Anmeldung ---------- */
+function renderSetup(){
+  return `<h2>Fast geschafft</h2><div class="item"><div>Die App ist noch nicht mit eurer Datenbank verbunden. Trag in <strong>config.js</strong> die Project URL und den anon-Key aus Supabase ein und lade die Datei neu hoch.</div><div class="line">Anleitung: README.md, Schritt 4.</div></div>`;
+}
+function renderLogin(){
+  if(ui.sentTo)return `<h2>Schau in dein Postfach</h2>
+    <div class="item"><div>Wir haben eine Mail an <strong>${esc(ui.sentTo)}</strong> geschickt. Tippe auf den Link darin <strong>oder</strong> gib hier den Code aus der Mail ein.</div>
+    <div class="line">Keine Mail da? Spam-Ordner prüfen. Link und Code gelten 24 Stunden.</div></div>
+    <form class="f" id="codeForm" style="margin-top:12px">
+      <label>Code aus der E-Mail<input type="text" id="cCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
+      <div class="msg err" id="cMsg"></div>
+      <div class="row"><button class="btn primary" type="submit">Anmelden</button><button class="btn" type="button" data-act="again">Andere Adresse</button></div>
+    </form>`;
+  return `<h2>Anmelden</h2>
+    <form class="f" id="loginForm">
+      <p class="muted" style="margin:0">Kein Passwort nötig. Du bekommst einen Link per E-Mail. Neu hier? Dann braucht deine Adresse eine Einladung von einem Mitglied.</p>
+      <label>E-Mail<input type="email" id="lMail" autocomplete="email" required placeholder="name@beispiel.de"></label>
+      <div class="msg err" id="lMsg">${esc(ui.authMsg)}</div>
+      <div><button class="btn primary" type="submit">Anmelde-Link senden</button></div>
+    </form>`;
+}
+function renderJoin(){
+  return `<h2>Willkommen im ${esc(CFG.groupName||'Maschinenring')}</h2>
+    <form class="f" id="joinForm">
+      <p class="muted" style="margin:0">Angemeldet als <strong>${esc(ui.joinEmail)}</strong>. Noch ein Schritt, dann bist du dabei.</p>
+      <label>Vorname (so sehen dich die anderen)<input type="text" id="jName" maxlength="40" required autocomplete="given-name"></label>
+      <div class="panel"><div class="small"><strong>Verleih-Regeln</strong></div><ol class="rules">${RULES.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>
+      <label class="check"><input type="checkbox" id="jRules"> Ich halte mich an die Verleih-Regeln</label>
+      <div class="msg err" id="jMsg"></div>
+      <div class="row"><button class="btn primary" type="submit">Beitreten</button><button class="btn" type="button" data-act="logout">Abmelden</button></div>
+    </form>`;
+}
+function renderError(){return `<h2>Da hakt etwas</h2><div class="item"><div>${esc(ui.authMsg)}</div><div class="row"><button class="btn small" data-act="reload">Neu laden</button><button class="btn small" data-act="logout">Abmelden</button></div></div>`}
+
+/* ---------- Geräte ---------- */
+function toolCard(t){
+  const s=status(t);
+  return `<button class="tool" data-act="open" data-id="${t.id}">
+    <span class="tag">${t.code}</span>
+    <span class="t-name">${esc(t.name)}</span>
+    <span class="t-meta">${esc(M(t.owner).name)} · ${esc(t.energie)}</span>
+    <span class="row"><span class="pill ${s.k}">${s.label}</span>${s.sub?`<span class="status-sub">${esc(s.sub)}</span>`:''}</span>
+  </button>`;
+}
+function listHTML(){
+  const q=ui.q.trim().toLowerCase();
+  let l=S.tools.filter(t=>(!ui.cat||t.cat===ui.cat)&&(!q||(t.name+' '+t.code+' '+M(t.owner).name+' '+t.zubehoer.join(' ')).toLowerCase().includes(q)));
+  if(ui.onlyFree)l=l.filter(t=>status(t).k==='frei');
+  return l.map(toolCard).join('');
+}
+function renderGeraete(){
+  const c={frei:0,verliehen:0,gesperrt:0};S.tools.forEach(t=>c[status(t).k]++);
+  if(!S.tools.length)return `<div class="today"><b>Heute, ${fmt(TODAY)}</b></div>
+    <div class="empty" style="margin-top:16px">Noch keine Geräte eingetragen. Fang mit deinem ersten an, die anderen sehen es sofort.</div>
+    <div class="row" style="margin-top:16px"><button class="btn primary" data-act="add">+ Gerät eintragen</button></div>`;
+  const list=listHTML();
+  return `<div class="today"><b>Heute, ${fmt(TODAY)}</b>
+      <span class="num"><strong>${c.frei}</strong> frei · <strong>${c.verliehen}</strong> verliehen · <strong>${c.gesperrt}</strong> gesperrt</span></div>
+    <div class="toolbar">
+      <input id="q" type="search" placeholder="Gerät, Besitzer, Zubehör oder Inv-Nr." value="${esc(ui.q)}" aria-label="Geräte durchsuchen">
+      <label class="check"><input id="onlyFree" type="checkbox" ${ui.onlyFree?'checked':''}> Nur heute frei</label>
+    </div>
+    <div class="chips" role="group" aria-label="Kategorie">
+      <button class="chip" data-act="cat" data-id="" aria-pressed="${!ui.cat}">Alle</button>
+      ${Object.entries(CATS).filter(([k])=>S.tools.some(t=>t.cat===k)).map(([k,v])=>`<button class="chip" data-act="cat" data-id="${k}" aria-pressed="${ui.cat===k}">${v}</button>`).join('')}
+    </div>
+    <div class="grid" id="toolList">${list}</div>
+    <div class="empty" id="noHits" ${list?'hidden':''}>Kein Gerät passt zur Suche.</div>
+    <div class="row" style="margin-top:16px"><button class="btn primary" data-act="add">+ Gerät eintragen</button></div>`;
+}
+
+/* ---------- Belegung ---------- */
+function renderBelegung(){
+  if(!S.tools.length)return `<h2>Belegung</h2><div class="empty">Noch keine Geräte eingetragen.</div>`;
+  const days=[...Array(14)].map((_,i)=>off(i));
+  const tools=[...S.tools].sort((a,b)=>Object.keys(CATS).indexOf(a.cat)-Object.keys(CATS).indexOf(b.cat)||a.id-b.id);
+  const head=days.map(d=>{const x=parse(d);const we=x.getDay()===0||x.getDay()===6;return `<th class="${we?'we':''} ${d===TODAY?'now':''}">${WD[x.getDay()]}<br><span class="num">${x.getDate()}.</span></th>`}).join('');
+  const rows=tools.map(t=>{
+    const bl=blocking(t);
+    const cells=days.map((d,i)=>{
+      const x=parse(d);const we=x.getDay()===0||x.getDay()===6;let inner='';
+      if(bl)inner=`<span class="c-blk ${i===0?'start':''} ${i===days.length-1?'end':''}">${i===0?'✕':''}</span>`;
+      else{const b=activeOn(t,d)||reqOn(t,d);
+        if(b){const cls=b.status==='bestätigt'?'c-best':'c-req';const st=b.from===d||i===0;const en=b.to===d||i===days.length-1;
+          inner=`<span class="${cls} ${st?'start':''} ${en?'end':''}" title="${esc(M(b.by).name)}: ${range(b.from,b.to)}">${st?esc(ini(b.by)):''}</span>`}}
+      return `<td class="d ${we?'we':''}">${inner}</td>`}).join('');
+    return `<tr><th class="name" scope="row"><button data-act="open" data-id="${t.id}">${esc(t.name)}</button><small>${t.code} · ${esc(M(t.owner).name)}</small></th>${cells}</tr>`}).join('');
+  return `<h2>Belegung, nächste 14 Tage</h2>
+    <div class="legend"><span><i class="c-best"></i>bestätigt</span><span><i class="c-req"></i>angefragt</span><span><i class="c-blk"></i>gesperrt</span><span>Kürzel = wer ausleiht</span></div>
+    <div class="scroll-x"><table class="plan"><thead><tr><th class="name" scope="col">Gerät</th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- Ausleihen ---------- */
+function bItem(b,extra='',stripe=''){
+  const t=TL(b.tool);if(!t)return '';
+  return `<div class="item ${stripe}">
+    <div class="head"><span class="tag">${t.code}</span><button class="linkish title" data-act="open" data-id="${t.id}">${esc(t.name)}</button></div>
+    <div class="line num"><strong>${range(b.from,b.to)}</strong>${b.zweck?' · '+esc(b.zweck):''}</div>${extra}</div>`;
+}
+function renderAnfragen(){
+  const me=S.me,own=b=>TL(b.tool)&&TL(b.tool).owner===me,by=(a,b)=>a.from.localeCompare(b.from);
+  const toMe=S.bookings.filter(b=>b.status==='angefragt'&&own(b)).sort(by);
+  const mine=S.bookings.filter(b=>b.by===me&&b.status==='bestätigt'&&b.to>=TODAY).sort(by);
+  const overdue=S.bookings.filter(b=>b.by===me&&b.status==='bestätigt'&&b.to<TODAY).sort(by);
+  const myReq=S.bookings.filter(b=>b.by===me&&(b.status==='angefragt'||b.status==='abgelehnt')).sort(by);
+  const out=S.bookings.filter(b=>b.by!==me&&b.status==='bestätigt'&&own(b)).sort(by);
+  const sec=(title,arr,fn,empty)=>`<h2>${title}</h2>${arr.length?`<div class="list">${arr.map(fn).join('')}</div>`:`<div class="empty">${empty}</div>`}`;
+  const borrowed=b=>{const t=TL(b.tool);const started=b.from<=TODAY,late=b.to<TODAY;
+    let extra=`<div class="line">von <strong>${esc(M(t.owner).name)}</strong> · ${late?'<span style="color:var(--bad)">war fällig am '+fmt(b.to)+'</span>':started?'zurück bis '+fmt(b.to):'abholen ab '+fmt(b.from)}</div>`;
+    if(started&&ui.ret!==b.id)extra+=`<div class="row"><button class="btn small" data-act="ret" data-id="${b.id}">Rückgabe erfassen</button></div>`;
+    if(ui.ret===b.id)extra+=returnPanel(b,t);
+    return bItem(b,extra,late?'stripe-bad':'')};
+  return sec('Anfragen an dich',toMe,b=>{const c=conflict(b.tool,b.from,b.to,b.id);
+      return bItem(b,`<div class="line">von <strong>${esc(M(b.by).name)}</strong></div>
+        ${c?`<div class="line" style="color:var(--bad)">Überschneidet sich mit ${esc(M(c.by).name)} (${range(c.from,c.to)})</div>`:''}
+        <div class="row"><button class="btn primary small" data-act="accept" data-id="${b.id}">Zusagen</button><button class="btn small danger" data-act="decline" data-id="${b.id}">Ablehnen</button></div>`,'stripe-warn')},
+      'Keine offenen Anfragen für deine Geräte.')
+   + sec('Bei dir ausgeliehen',[...overdue,...mine],borrowed,'Du hast gerade nichts ausgeliehen.')
+   + sec('Deine Anfragen',myReq,b=>bItem(b,`<div class="row"><span class="pill ${b.status==='abgelehnt'?'abgelehnt':'angefragt'}">${b.status==='abgelehnt'?'Abgelehnt':'Wartet auf '+esc(M(TL(b.tool).owner).name)}</span>
+        <button class="linkish" data-act="withdraw" data-id="${b.id}">${b.status==='angefragt'?'Zurückziehen':'Ausblenden'}</button></div>`),'Keine offenen Anfragen von dir.')
+   + sec('Deine Geräte unterwegs',out,b=>bItem(b,`<div class="line">bei <strong>${esc(M(b.by).name)}</strong>${b.from>TODAY?' · Abholung '+fmt(b.from):b.to<TODAY?' · <span style="color:var(--bad)">überfällig</span>':''}</div>
+        ${b.from<=TODAY?`<div class="row"><button class="linkish" data-act="retOwner" data-id="${b.id}">Ist zurück, Rückgabe bestätigen</button></div>`:''}`),'Keins deiner Geräte ist verliehen oder verplant.');
+}
+function returnPanel(b,t){
+  return `<form class="f panel" id="retForm" data-id="${b.id}">
+    <div class="small"><strong>Übergabe-Check</strong> · Was geht zurück an ${esc(M(t.owner).name)}?</div>
+    ${t.zubehoer.length?t.zubehoer.map((z,i)=>`<label class="check"><input type="checkbox" id="acc${i}" checked> ${esc(z)}</label>`).join(''):'<div class="small muted">Kein Zubehör hinterlegt.</div>'}
+    <label class="check"><input type="radio" name="cond" id="condOk" value="ok" checked> Zustand in Ordnung</label>
+    <label class="check"><input type="radio" name="cond" id="condBad" value="bad"> Schaden oder Mangel</label>
+    <label>Beschreibung (bei Schaden)<textarea id="retText" maxlength="500" placeholder="Was ist passiert?"></textarea></label>
+    <label class="check"><input type="checkbox" id="retBlock"> Gerät sperren, bis es repariert ist</label>
+    <div class="msg err" id="retMsg"></div>
+    <div class="row"><button class="btn primary small" type="submit">Rückgabe bestätigen</button><button class="btn small" type="button" data-act="ret" data-id="">Abbrechen</button></div>
+  </form>`;
+}
+
+/* ---------- Wartung ---------- */
+function issueItem(i){
+  const t=TL(i.tool);if(!t)return '';
+  const may=t.owner===S.me||i.by===S.me||M(S.me).role==='Admin';
+  return `<div class="item ${!i.done?(i.blocking?'stripe-bad':'stripe-warn'):''}">
+    <div class="head"><span class="tag">${t.code}</span><button class="linkish title" data-act="open" data-id="${t.id}">${esc(t.name)}</button>
+      <span class="pill ${i.done?'frei':i.blocking?'gesperrt':'verliehen'}">${i.done?'Erledigt':i.blocking?i.typ+' · gesperrt':i.typ}</span></div>
+    <div>${esc(i.text)}</div>
+    <div class="line num">${fmt(i.date)} · gemeldet von ${esc(M(i.by).name)} · Besitzer ${esc(M(t.owner).name)}</div>
+    ${!i.done&&may?`<div class="row"><button class="btn small" data-act="done" data-id="${i.id}">Als erledigt markieren</button></div>`:''}
+  </div>`;
+}
+function issueForm(toolId){
+  if(!toolId&&!S.tools.length)return '<div class="empty">Erst ein Gerät eintragen, dann kann man dazu etwas melden.</div>';
+  return `<form class="f" id="issueForm">
+    ${toolId?`<input type="hidden" id="iTool" value="${toolId}">`:`<label>Gerät<select id="iTool">${S.tools.map(t=>`<option value="${t.id}">${t.code} · ${esc(t.name)}</option>`).join('')}</select></label>`}
+    <label>Art<select id="iTyp"><option>Schaden</option><option>Wartung</option></select></label>
+    <label>Beschreibung<textarea id="iText" maxlength="500" placeholder="z. B. Kette stumpf, Kabel angescheuert, Akku schwach"></textarea></label>
+    <label class="check"><input type="checkbox" id="iBlock"> Gerät sperren, bis es behoben ist</label>
+    <div class="msg err" id="iMsg"></div>
+    <div><button class="btn primary" type="submit">Meldung speichern</button></div>
+  </form>`;
+}
+function renderWartung(){
+  const open=S.issues.filter(i=>!i.done).sort((a,b)=>(b.blocking-a.blocking)||b.date.localeCompare(a.date));
+  const done=S.issues.filter(i=>i.done).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20);
+  return `<div class="today"><b>Offene Meldungen</b><span class="num"><strong>${open.length}</strong> offen · <strong>${open.filter(i=>i.blocking).length}</strong> davon gesperrt</span></div>
+    ${open.length?`<div class="list" style="margin-top:12px">${open.map(issueItem).join('')}</div>`:'<div class="empty" style="margin-top:12px">Alles in Ordnung, keine offenen Meldungen.</div>'}
+    <h2>Neue Meldung</h2>${issueForm()}
+    ${done.length?`<h2>Zuletzt erledigt</h2><div class="list">${done.map(issueItem).join('')}</div>`:''}`;
+}
+
+/* ---------- Gruppe ---------- */
+function renderGruppe(){
+  const admin=M(S.me).role==='Admin';
+  const open=S.invites.filter(v=>v.status==='offen').sort((a,b)=>b.created_at.localeCompare(a.created_at));
+  const members=S.members.map(m=>{const n=S.tools.filter(t=>t.owner===m.id).length;
+    return `<div class="item"><div class="head"><span class="title">${esc(m.name)}${m.id===S.me?' (du)':''}</span><span class="pill ${m.role==='Admin'?'bestaetigt':'angefragt'}">${m.role}</span></div>
+      <div class="line">${esc(m.email)}</div>
+      <div class="line num">${n} ${n===1?'Gerät':'Geräte'} · dabei seit ${fmt(m.since)}</div>
+      ${admin&&m.id!==S.me?`<div class="row"><button class="linkish" data-act="remove" data-id="${m.id}">Aus der Gruppe entfernen</button></div>`:''}</div>`}).join('');
+  const invItems=open.map(v=>{const ex=expired(v),may=admin||v.by===S.me;
+    return `<div class="item ${ex?'':'stripe-warn'}"><div class="head"><span class="title">${esc(v.name||v.email)}</span><span class="pill ${ex?'abgelehnt':'angefragt'}">${ex?'Abgelaufen':'Wartet auf Annahme'}</span></div>
+      <div class="line">${esc(v.email)}</div>
+      <div class="line num">eingeladen von ${v.by?esc(M(v.by).name):'Einrichtung'} am ${fmt(v.date)} · ${ex?'war gültig bis':'gültig bis'} ${fmt(validUntil(v))}</div>
+      ${may?`<div class="row"><button class="btn small ${ex?'primary':''}" data-act="resend" data-id="${v.id}">${ex?'Neu senden':'Erneut senden'}</button><button class="linkish" data-act="revoke" data-id="${v.id}">Zurückziehen</button></div>`:''}</div>`}).join('');
+  return `<div class="today"><b>Eure Gruppe</b><span class="num"><strong>${S.members.length}</strong> Mitglieder · <strong>${open.filter(v=>!expired(v)).length}</strong> Einladungen offen</span></div>
+    <h2>Jemanden einladen</h2>
+    <form class="f" id="inviteForm">
+      <div class="two"><label>Vorname<input type="text" id="vName" placeholder="z. B. Flo" autocomplete="off" maxlength="40"></label>
+      <label>E-Mail<input type="email" id="vMail" placeholder="name@beispiel.de" autocomplete="off" required></label></div>
+      <div class="msg err" id="vMsg"></div>
+      <div><button class="btn primary" type="submit">Einladung senden</button></div>
+      <p class="note">Die Person bekommt eine E-Mail mit einem Link. Der Link selbst gilt 24 Stunden, die Einladung ${INVITE_DAYS} Tage. Ist der Link abgelaufen, kann sie in der App einfach ihre E-Mail eingeben und bekommt einen neuen.</p>
+    </form>
+    <div class="item" style="margin-top:12px"><div class="small"><strong>Link zur App zum Weitergeben</strong></div><code class="mono" id="appLink">${esc(APP_URL)}</code><div class="row"><button class="btn small" data-act="copyApp">Link kopieren</button></div></div>
+    <h2>Offene Einladungen</h2>
+    ${open.length?`<div class="list">${invItems}</div>`:'<div class="empty">Keine offenen Einladungen.</div>'}
+    <h2>Mitglieder</h2><div class="list">${members}</div>
+    <h2>Verleih-Regeln</h2><ol class="rules">${RULES.map(r=>`<li>${esc(r)}</li>`).join('')}</ol>`;
+}
+async function sendInviteMail(email){
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:APP_URL,data:{invited_by:M(S.me).name}}});
+  if(error)throw error;
+}
+
+/* ---------- Detail-Sheets ---------- */
+function sheetTool(t){
+  const s=status(t),mine=t.owner===S.me,bl=blocking(t),admin=M(S.me).role==='Admin';
+  const cal=[...Array(21)].map((_,i)=>{const d=off(i);const x=parse(d);const b=activeOn(t,d),r=reqOn(t,d);
+    const cls=bl?'c-blk':b?'c-best':r?'c-req':'';
+    return `<div class="${cls} ${d===TODAY?'now':''}" title="${b?esc(M(b.by).name):r?'angefragt: '+esc(M(r.by).name):'frei'}"><small>${WD[x.getDay()]}</small><span class="num">${x.getDate()}.</span><small>${bl?'✕':b?esc(ini(b.by)):r?'?':'&nbsp;'}</small></div>`}).join('');
+  const upcoming=S.bookings.filter(b=>b.tool===t.id&&(b.status==='bestätigt'||b.status==='angefragt')&&b.to>=TODAY).sort((a,b)=>a.from.localeCompare(b.from));
+  const hist=S.bookings.filter(b=>b.tool===t.id&&b.status==='zurück').sort((a,b)=>b.from.localeCompare(a.from)).slice(0,10);
+  const iss=S.issues.filter(i=>i.tool===t.id).sort((a,b)=>a.done-b.done||b.date.localeCompare(a.date));
+  return `<div class="grab"></div><button class="btn small x" data-act="close">Schließen</button>
+    <span class="tag">${t.code}</span><h2>${esc(t.name)}</h2>
+    <div class="row"><span class="pill ${s.k}">${s.label}</span>${s.sub?`<span class="status-sub">${esc(s.sub)}</span>`:''}</div>
+    <dl class="facts"><dt>Besitzer</dt><dd>${esc(M(t.owner).name)}${mine?' (du)':''}</dd><dt>Kategorie</dt><dd>${CATS[t.cat]||t.cat}</dd><dt>Antrieb</dt><dd>${esc(t.energie)}</dd><dt>Zubehör</dt><dd>${t.zubehoer.length?t.zubehoer.map(esc).join(', '):'–'}</dd></dl>
+    ${t.hinweis?`<div class="hint"><b>Hinweis vom Besitzer:</b> ${esc(t.hinweis)}</div>`:''}
+    <h3>Kalender, 3 Wochen</h3><div class="cal">${cal}</div>
+    <div class="legend" style="margin-top:8px"><span><i class="c-best"></i>bestätigt</span><span><i class="c-req"></i>angefragt</span><span><i class="c-blk"></i>gesperrt</span></div>
+    ${mine?`<h3>Geplant</h3>${upcoming.length?`<div class="list">${upcoming.map(b=>`<div class="item"><div class="line num"><strong>${range(b.from,b.to)}</strong> · ${esc(M(b.by).name)}${b.zweck?' · '+esc(b.zweck):''}</div><div><span class="pill ${b.status==='bestätigt'?'bestaetigt':'angefragt'}">${b.status==='bestätigt'?'Bestätigt':'Angefragt'}</span></div></div>`).join('')}</div>`:'<div class="empty">Nichts geplant.</div>'}`
+    :`<h3>Ausleihe anfragen</h3>
+    <form class="f" id="reqForm" data-id="${t.id}">
+      <div class="two"><label>Von<input type="date" id="rFrom" min="${TODAY}" value="${off(1)}" required></label><label>Bis<input type="date" id="rTo" min="${TODAY}" value="${off(1)}" required></label></div>
+      <label>Wofür? (optional)<input type="text" id="rZweck" maxlength="80" placeholder="z. B. Terrasse, Brennholz"></label>
+      <div class="msg err" id="rMsg"></div>
+      <div><button class="btn primary" type="submit">Anfrage an ${esc(M(t.owner).name)} senden</button></div>
+    </form>`}
+    <h3>Meldungen</h3>${iss.length?`<div class="list">${iss.map(issueItem).join('')}</div>`:'<div class="empty">Keine Meldungen zu diesem Gerät.</div>'}
+    <details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Schaden oder Wartung melden</summary><div style="margin-top:10px">${issueForm(t.id)}</div></details>
+    ${hist.length?`<h3>Verlauf</h3><div class="list">${hist.map(b=>`<div class="item"><div class="line num"><strong>${range(b.from,b.to)}</strong> · ${esc(M(b.by).name)}${b.zweck?' · '+esc(b.zweck):''}</div></div>`).join('')}</div>`:''}
+    ${mine||admin?`<div class="row" style="margin-top:20px"><button class="btn small" data-act="edit" data-id="${t.id}">Bearbeiten</button><button class="btn small danger" data-act="delTool" data-id="${t.id}">Gerät löschen</button></div>`:''}`;
+}
+function sheetForm(t){
+  const v=t||{name:'',cat:'bohren',energie:'18 V Akku',zubehoer:[],hinweis:''};
+  return `<div class="grab"></div><button class="btn small x" data-act="close">Schließen</button>
+    ${t?`<span class="tag">${t.code}</span>`:''}<h2>${t?'Gerät bearbeiten':'Gerät eintragen'}</h2>
+    ${t?'':`<p class="muted small">Besitzer: ${esc(M(S.me).name)}. Die Inventarnummer wird automatisch vergeben, schreib sie auf ein Etikett am Gerät.</p>`}
+    <form class="f" id="toolForm" data-id="${t?t.id:''}">
+      <label>Bezeichnung<input type="text" id="aName" maxlength="80" value="${esc(v.name)}" placeholder="z. B. Akku-Winkelschleifer 125 mm" required></label>
+      <div class="two"><label>Kategorie<select id="aCat">${Object.entries(CATS).map(([k,n])=>`<option value="${k}" ${k===v.cat?'selected':''}>${n}</option>`).join('')}</select></label>
+      <label>Antrieb<select id="aEn">${ENERGIE.map(e=>`<option ${e===v.energie?'selected':''}>${e}</option>`).join('')}</select></label></div>
+      <label>Zubehör (mit Komma getrennt)<input type="text" id="aZub" value="${esc(v.zubehoer.join(', '))}" placeholder="Akku 4 Ah, Ladegerät, Koffer"></label>
+      <label>Hinweis für Ausleiher (optional)<input type="text" id="aHint" maxlength="200" value="${esc(v.hinweis)}" placeholder="z. B. nur mit Schutzbrille"></label>
+      <div class="msg err" id="aMsg"></div>
+      <div><button class="btn primary" type="submit">${t?'Speichern':'Eintragen'}</button></div>
+    </form>`;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  document.getElementById('gname').textContent=CFG.groupName||'Maschinenring';
+  const inApp=ui.screen==='app';
+  document.getElementById('tabs').hidden=!inApp;document.getElementById('who').hidden=!inApp;
+  const view=document.getElementById('view');
+  if(!inApp){
+    document.getElementById('sub').textContent='Werkzeug teilen unter Freunden';
+    view.innerHTML=({setup:renderSetup,login:renderLogin,join:renderJoin,error:renderError,loading:()=>'<div class="empty">Lädt …</div>'}[ui.screen])();
+    ui.sheet=null;renderSheet();return;
+  }
+  document.getElementById('meName').textContent=M(S.me).name;
+  document.getElementById('sub').textContent=`${S.members.length} Mitglieder · ${S.tools.length} Geräte`;
+  view.innerHTML={geraete:renderGeraete,belegung:renderBelegung,anfragen:renderAnfragen,wartung:renderWartung,gruppe:renderGruppe}[ui.tab]();
+  document.querySelectorAll('.tabs button').forEach(b=>{if(b.dataset.id===ui.tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  const set=(id,n)=>{const e=document.getElementById(id);e.textContent=n;e.hidden=!n};
+  set('bA',S.bookings.filter(b=>b.status==='angefragt'&&TL(b.tool)&&TL(b.tool).owner===S.me).length);
+  set('bW',S.issues.filter(i=>!i.done&&TL(i.tool)&&TL(i.tool).owner===S.me).length);
+  set('bG',S.invites.filter(v=>v.status==='offen'&&!expired(v)).length);
+  renderSheet();
+}
+function renderSheet(){
+  const sh=document.getElementById('sheet'),sc=document.getElementById('scrim');
+  if(ui.sheet&&ui.sheet.type!=='add'&&!TL(ui.sheet.id))ui.sheet=null;
+  if(!ui.sheet){sh.hidden=true;sc.hidden=true;return}
+  const keep=sh.hidden?0:sh.scrollTop;
+  sh.innerHTML=ui.sheet.type==='add'?sheetForm(null):ui.sheet.type==='edit'?sheetForm(TL(ui.sheet.id)):sheetTool(TL(ui.sheet.id));
+  sh.hidden=false;sc.hidden=false;sh.scrollTop=keep;
+}
+function copy(text,elId){
+  const fallback=()=>{const el=document.getElementById(elId);if(el){const r=document.createRange();r.selectNodeContents(el);const s=getSelection();s.removeAllRanges();s.addRange(r)}toast('Link markiert, jetzt kopieren')};
+  try{navigator.clipboard.writeText(text).then(()=>toast('Link kopiert'),fallback)}catch(e){fallback()}
+}
+function confirmTap(el,label){if(el.dataset.sure)return true;el.dataset.sure='1';el.textContent=label;setTimeout(()=>{if(el.isConnected){delete el.dataset.sure;render()}},5000);return false}
+
+/* ---------- Events ---------- */
+document.addEventListener('click',async e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;
+  const a=el.dataset.act,raw=el.dataset.id,id=raw&&/^\d+$/.test(raw)?Number(raw):raw;
+  if(a==='tab'){ui.tab=raw;ui.sheet=null;try{localStorage.setItem('mr-tab',raw)}catch(x){}render();window.scrollTo(0,0)}
+  else if(a==='cat'){ui.cat=raw;render()}
+  else if(a==='open'){ui.sheet={type:'tool',id};renderSheet();document.getElementById('sheet').scrollTop=0}
+  else if(a==='add'){ui.sheet={type:'add'};renderSheet()}
+  else if(a==='edit'){ui.sheet={type:'edit',id};renderSheet();document.getElementById('sheet').scrollTop=0}
+  else if(a==='close'){ui.sheet=null;renderSheet()}
+  else if(a==='logout'){await sb.auth.signOut();ui.sentTo='';ui.authMsg=''}
+  else if(a==='again'){ui.sentTo='';render()}
+  else if(a==='reload'){location.reload()}
+  else if(a==='refresh'){act(async()=>{},'Aktualisiert',el)}
+  else if(a==='accept'){const b=S.bookings.find(x=>x.id===id);act(()=>sb.rpc('respond_booking',{p_id:id,p_accept:true}),`Zugesagt: ${M(b.by).name}, ${range(b.from,b.to)}`,el)}
+  else if(a==='decline'){act(()=>sb.rpc('respond_booking',{p_id:id,p_accept:false}),'Abgelehnt',el)}
+  else if(a==='withdraw'){act(()=>sb.from('bookings').delete().eq('id',id),'Anfrage entfernt',el)}
+  else if(a==='ret'){ui.ret=id||null;render()}
+  else if(a==='retOwner'){if(!confirmTap(el,'Ohne Mängel zurückbekommen? Nochmal tippen'))return;act(()=>sb.rpc('return_booking',{p_id:id}),'Rückgabe bestätigt',el)}
+  else if(a==='done'){act(()=>sb.rpc('close_issue',{p_id:id}),'Meldung erledigt',el)}
+  else if(a==='delTool'){
+    if(S.bookings.some(b=>b.tool===id&&b.status==='bestätigt'&&b.to>=TODAY)){toast('Das Gerät ist noch verliehen oder verplant.',true);return}
+    if(!confirmTap(el,'Wirklich löschen? Nochmal tippen'))return;
+    ui.sheet=null;act(()=>sb.from('tools').delete().eq('id',id),'Gerät gelöscht',el)}
+  else if(a==='resend'){const v=S.invites.find(x=>x.id===id);
+    act(async()=>{const r=await sb.from('invites').update({created_at:new Date().toISOString()}).eq('id',id);if(r.error)throw r.error;await sendInviteMail(v.email)},`Einladung erneut an ${v.email} gesendet`,el)}
+  else if(a==='revoke'){const v=S.invites.find(x=>x.id===id);act(()=>sb.from('invites').delete().eq('id',id),`Einladung an ${v.email} zurückgezogen`,el)}
+  else if(a==='copyApp'){copy(APP_URL,'appLink')}
+  else if(a==='remove'){const m=M(raw);
+    if(S.tools.some(t=>t.owner===raw)){toast(`${m.name} hat noch Geräte eingetragen. Erst löschen oder übergeben.`,true);return}
+    if(!confirmTap(el,`${m.name} wirklich entfernen? Nochmal tippen`))return;
+    act(()=>sb.from('members').delete().eq('id',raw),`${m.name} wurde entfernt`,el)}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&ui.sheet){ui.sheet=null;renderSheet()}});
+const refreshList=()=>{const l=listHTML(),tl=document.getElementById('toolList');if(!tl)return;tl.innerHTML=l;document.getElementById('noHits').hidden=!!l};
+document.addEventListener('input',e=>{if(e.target.id==='q'){ui.q=e.target.value;refreshList()}});
+document.addEventListener('change',e=>{
+  if(e.target.id==='onlyFree'){ui.onlyFree=e.target.checked;refreshList()}
+  if(e.target.id==='rFrom'){const t=document.getElementById('rTo');if(t.value<e.target.value)t.value=e.target.value;t.min=e.target.value}
+});
+document.addEventListener('submit',async e=>{
+  e.preventDefault();const f=e.target,$=id=>document.getElementById(id),btn=f.querySelector('[type=submit]');
+  if(btn&&btn.disabled)return;
+  if(f.id==='loginForm'){
+    const mail=$('lMail').value.trim().toLowerCase();btn.disabled=true;
+    const {error}=await sb.auth.signInWithOtp({email:mail,options:{shouldCreateUser:true,emailRedirectTo:APP_URL}});
+    btn.disabled=false;
+    if(error){$('lMsg').textContent=errText(error);return}
+    ui.sentTo=mail;ui.authMsg='';render();
+  }
+  if(f.id==='codeForm'){
+    const token=$('cCode').value.replace(/\D/g,'');
+    if(token.length<6){$('cMsg').textContent='Der Code hat mindestens 6 Ziffern.';return}
+    btn.disabled=true;
+    const {data,error}=await sb.auth.verifyOtp({email:ui.sentTo,token,type:'email'});
+    btn.disabled=false;
+    if(error){$('cMsg').textContent=/expired|invalid/i.test(error.message)?'Der Code stimmt nicht oder ist abgelaufen.':errText(error);return}
+    ui.sentTo='';await enter(data.session);
+  }
+  if(f.id==='joinForm'){
+    const name=$('jName').value.trim();
+    if(!name){$('jMsg').textContent='Bitte einen Vornamen eingeben.';return}
+    if(!$('jRules').checked){$('jMsg').textContent='Bitte die Verleih-Regeln bestätigen.';return}
+    btn.disabled=true;
+    const {error}=await sb.rpc('join_group',{p_name:name});
+    btn.disabled=false;
+    if(error){$('jMsg').textContent=errText(error);return}
+    const {data:{session}}=await sb.auth.getSession();await enter(session);toast(`Willkommen, ${name}!`);
+  }
+  if(f.id==='reqForm'){
+    const tid=Number(f.dataset.id),t=TL(tid),from=$('rFrom').value,to=$('rTo').value,msg=$('rMsg');
+    if(!from||!to){msg.textContent='Bitte Von und Bis wählen.';return}
+    if(to<from){msg.textContent='Bis muss am oder nach dem Startdatum liegen.';return}
+    const c=conflict(tid,from,to);if(c){msg.textContent=`Belegt: ${M(c.by).name} hat es ${range(c.from,c.to)}. Wähl einen anderen Zeitraum.`;return}
+    act(()=>sb.rpc('request_booking',{p_tool:tid,p_from:from,p_to:to,p_purpose:$('rZweck').value.trim()}),`Anfrage an ${M(t.owner).name} gesendet`,btn);
+  }
+  if(f.id==='issueForm'){
+    const text=$('iText').value.trim();if(!text){$('iMsg').textContent='Bitte kurz beschreiben, was los ist.';return}
+    const tool=Number($('iTool').value),blk=$('iBlock').checked;
+    act(()=>sb.from('issues').insert({tool_id:tool,kind:$('iTyp').value,text,blocking:blk}),`Meldung gespeichert${blk?', Gerät gesperrt':''}`,btn);
+  }
+  if(f.id==='toolForm'){
+    const name=$('aName').value.trim();if(!name){$('aMsg').textContent='Bitte eine Bezeichnung eingeben.';return}
+    const row={name,category:$('aCat').value,power:$('aEn').value,accessories:$('aZub').value.split(',').map(s=>s.trim()).filter(Boolean),note:$('aHint').value.trim()};
+    const editId=f.dataset.id?Number(f.dataset.id):null;
+    if(editId){if(await act(()=>sb.from('tools').update(row).eq('id',editId),'Gespeichert',btn)){ui.sheet={type:'tool',id:editId};renderSheet()}}
+    else{let newId=null;
+      if(await act(async()=>{const r=await sb.from('tools').insert(row).select('id').single();if(r.error)throw r.error;newId=r.data.id},()=>`${code(newId)} eingetragen`,btn)){ui.sheet={type:'tool',id:newId};renderSheet()}}
+  }
+  if(f.id==='inviteForm'){
+    const mail=$('vMail').value.trim().toLowerCase(),name=$('vName').value.trim(),msg=$('vMsg');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(mail)){msg.textContent='Bitte eine gültige E-Mail-Adresse eingeben.';return}
+    const mem=S.members.find(m=>m.email.toLowerCase()===mail);if(mem){msg.textContent=`${mem.name} ist mit dieser Adresse schon Mitglied.`;return}
+    const ex=S.invites.find(v=>v.status==='offen'&&v.email===mail);
+    if(ex&&!expired(ex)){msg.textContent=`An diese Adresse läuft schon eine Einladung (gültig bis ${fmt(validUntil(ex))}). Unten kannst du sie erneut senden.`;return}
+    act(async()=>{
+      if(ex){const d=await sb.from('invites').delete().eq('id',ex.id);if(d.error)throw d.error}
+      const r=await sb.from('invites').insert({email:mail,name:name||null});if(r.error)throw r.error;
+      await sendInviteMail(mail);
+    },`Einladung an ${mail} gesendet`,btn).then(ok=>{if(ok){const v=$('vMail');if(v)v.value=''}});
+  }
+  if(f.id==='retForm'){
+    const id=Number(f.dataset.id),b=S.bookings.find(x=>x.id===id),t=TL(b.tool);
+    const bad=$('condBad').checked,text=$('retText').value.trim();
+    if(bad&&!text){$('retMsg').textContent='Bitte den Schaden kurz beschreiben.';return}
+    const missing=t.zubehoer.filter((z,i)=>!$('acc'+i).checked);
+    if(await act(()=>sb.rpc('return_booking',{p_id:id,p_missing:missing,p_damage:bad?text:null,p_block:bad&&$('retBlock').checked}),
+      `${t.name} zurückgegeben${missing.length||bad?', Meldung an '+M(t.owner).name:''}`,btn))ui.ret=null,render();
+  }
+});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ui.screen==='app'&&!document.querySelector('form :focus'))loadAll().then(render).catch(()=>{})});
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+boot();
+</script>
+
+</body>
+</html>
